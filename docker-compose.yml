@@ -22,16 +22,16 @@ services:
       interval: 2s
       timeout: 20s
       retries: 10
-  pgadmin:
-    container_name: pgadmin_container
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-    volumes:
-      - ./servers.json:/pgadmin4/servers.json
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
+#  pgadmin:
+#    container_name: pgadmin_container
+#    image: dpage/pgadmin4
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+#      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+#    volumes:
+#      - ./servers.json:/pgadmin4/servers.json
+#    ports:
+#      - "${PGADMIN_PORT:-5050}:80"
 
   ollama:
     image: ollama/ollama
@@ -43,8 +43,8 @@ services:
     entrypoint: >
       /bin/sh -c "
         ollama serve &
-        sleep 2 &&
-        ollama pull gemma3:4b-it-q4_K_M &&
+        sleep 10 &&
+        ollama pull gemma3:12b-it-qat &&
         ollama pull mxbai-embed-large &&
         wait
       "

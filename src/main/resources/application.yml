@@ -12,3 +12,7 @@ spring:
         model: gemma3:4b-it-q4_K_M   # Обязательно в кавычках!
       embedding:
         model: nxbai-embed-large     # Тоже в кавычках — на всякий случай
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ragdb
+    username: postgres
+    password: postgres
