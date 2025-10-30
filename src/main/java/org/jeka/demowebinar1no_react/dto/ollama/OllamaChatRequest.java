@@ -16,6 +16,9 @@ public class OllamaChatRequest {
     
     @JsonProperty("model")
     private String model;
+
+    @JsonProperty("role")
+    private String role;
     
     @JsonProperty("messages")
     private List<OllamaMessage> messages;

@@ -29,6 +29,6 @@ public class ChatEntity {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("timestamp ASC")
+    @OrderBy("timestamp DESC")
     private List<ChatEntryEntity> entries = new ArrayList<>();
 }

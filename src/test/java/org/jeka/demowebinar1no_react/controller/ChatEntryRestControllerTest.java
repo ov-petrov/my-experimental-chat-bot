@@ -3,6 +3,7 @@ package org.jeka.demowebinar1no_react.controller;
 import io.restassured.http.ContentType;
 import org.jeka.demowebinar1no_react.model.ChatEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
+import org.jeka.demowebinar1no_react.model.Role;
 import org.jeka.demowebinar1no_react.service.ChatEntryService;
 import org.jeka.demowebinar1no_react.service.ChatService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +18,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -48,7 +50,7 @@ class ChatEntryRestControllerTest {
         testEntry = ChatEntryEntity.builder()
                 .id(1L)
                 .chat(testChat)
-                .role("user")
+                .role(Role.USER)
                 .content("Hello, world!")
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -92,7 +94,7 @@ class ChatEntryRestControllerTest {
     void createEntry_WhenChatExists_ShouldCreateAndReturnEntry() {
         // Given
         ChatEntryEntity newEntry = ChatEntryEntity.builder()
-                .role("user")
+                .role(Role.USER)
                 .content("New message")
                 .build();
         when(chatService.findById(1L)).thenReturn(Optional.of(testChat));
@@ -118,7 +120,7 @@ class ChatEntryRestControllerTest {
     void createEntry_WhenChatNotExists_ShouldReturn404() {
         // Given
         ChatEntryEntity newEntry = ChatEntryEntity.builder()
-                .role("user")
+                .role(Role.USER)
                 .content("New message")
                 .build();
         when(chatService.findById(999L)).thenReturn(Optional.empty());
@@ -170,7 +172,7 @@ class ChatEntryRestControllerTest {
     void updateEntry_WhenEntryExists_ShouldUpdateAndReturnEntry() {
         // Given
         ChatEntryEntity updatedEntry = ChatEntryEntity.builder()
-                .role("assistant")
+                .role(Role.ASSISTANT)
                 .content("Updated message")
                 .build();
         when(chatEntryService.update(eq(1L), any(ChatEntryEntity.class))).thenReturn(updatedEntry);

@@ -2,6 +2,7 @@ package org.jeka.demowebinar1no_react.controller;
 
 import org.jeka.demowebinar1no_react.model.ChatEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
+import org.jeka.demowebinar1no_react.model.Role;
 import org.jeka.demowebinar1no_react.service.ChatEntryService;
 import org.jeka.demowebinar1no_react.service.ChatService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -35,6 +35,15 @@ class ChatControllerTest {
     @MockBean
     private ChatEntryService chatEntryService;
 
+    @MockBean
+    private org.jeka.demowebinar1no_react.service.OllamaService ollamaService;
+
+    @MockBean
+    private org.jeka.demowebinar1no_react.service.OllamaServiceNew ollamaServiceNew;
+
+    @MockBean
+    private org.jeka.demowebinar1no_react.service.PromptService promptService;
+
     private ChatEntity testChat;
     private ChatEntryEntity testEntry;
 
@@ -49,7 +58,7 @@ class ChatControllerTest {
         testEntry = ChatEntryEntity.builder()
                 .id(1L)
                 .chat(testChat)
-                .role("user")
+                .role(Role.USER)
                 .content("Hello, world!")
                 .timestamp(LocalDateTime.now())
                 .build();

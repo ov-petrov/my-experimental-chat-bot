@@ -2,9 +2,10 @@ package org.jeka.demowebinar1no_react.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntity;
+import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
 import org.jeka.demowebinar1no_react.model.PromptEntity;
+import org.jeka.demowebinar1no_react.model.Role;
 import org.jeka.demowebinar1no_react.service.ChatEntryService;
 import org.jeka.demowebinar1no_react.service.ChatService;
 import org.jeka.demowebinar1no_react.service.OllamaService;
@@ -52,44 +53,59 @@ public class ChatController {
         model.addAttribute("newChat", new ChatEntity());
         model.addAttribute("selectedChat", chat);
         model.addAttribute("entries", chatEntryService.findByChat(chat));
-        model.addAttribute("newEntry", ChatEntryEntity.builder().role("user").chat(chat).build());
+        model.addAttribute("newEntry", ChatEntryEntity.builder().role(Role.USER).chat(chat).build());
         return "chat";
     }
 
     @PostMapping("/chats/{id}/entries")
     public String addEntry(@PathVariable Long id,
                            @ModelAttribute("newEntry") ChatEntryEntity newEntry) {
+        long requestStartTime = System.currentTimeMillis();
+        log.info("Processing new chat entry for chat ID: {}", id);
+        
         ChatEntity chat = chatService.findById(id).orElseThrow();
         newEntry.setChat(chat);
         
         // Save user message
         chatEntryService.create(newEntry);
+        log.debug("User message saved");
         
         // Get AI response if it's a user message
-        if ("user".equals(newEntry.getRole())) {
+        if (Role.USER.equals(newEntry.getRole())) {
             try {
-                // Build enhanced prompt with system prompt and conversation history
-                String enhancedPrompt = buildEnhancedPrompt(chat, newEntry.getContent());
+                log.info("Requesting AI response for user message");
+                long aiStartTime = System.currentTimeMillis();
+
+                String aiResponse = ollamaService.chatSync(newEntry.getContent());
+
+                long aiEndTime = System.currentTimeMillis();
+                long aiDuration = aiEndTime - aiStartTime;
                 
-                String aiResponse = ollamaService.chat(enhancedPrompt).block();
                 if (aiResponse != null && !aiResponse.trim().isEmpty()) {
                     ChatEntryEntity aiEntry = ChatEntryEntity.builder()
                             .chat(chat)
-                            .role("assistant")
+                            .role(Role.ASSISTANT)
                             .content(aiResponse)
                             .build();
                     chatEntryService.create(aiEntry);
+                    log.info("AI response saved. Total AI processing time: {} ms ({} seconds)",
+                            aiDuration, String.format("%.2f", aiDuration / 1000.0));
                 }
             } catch (Exception e) {
                 log.error("Error getting AI response: {}", e.getMessage());
                 // Continue without AI response
             }
         }
+
+        long requestEndTime = System.currentTimeMillis();
+        long totalDuration = requestEndTime - requestStartTime;
+        log.info("Request completed in {} ms ({} seconds)",
+                totalDuration, String.format("%.2f", totalDuration / 1000.0));
         
         return "redirect:/chats/" + id;
     }
 
-    @PostMapping("/chats/{id}/delete")
+    @DeleteMapping("/chats/{id}")
     public String deleteChat(@PathVariable Long id) {
         chatService.delete(id);
         return "redirect:/chats";
@@ -162,7 +178,7 @@ public class ChatController {
         
         for (int i = startIndex; i < recentEntries.size(); i++) {
             ChatEntryEntity entry = recentEntries.get(i);
-            promptBuilder.append(entry.getRole().toUpperCase())
+            promptBuilder.append(entry.getRole().getRole().toUpperCase())
                     .append(": ")
                     .append(entry.getContent())
                     .append("\n");

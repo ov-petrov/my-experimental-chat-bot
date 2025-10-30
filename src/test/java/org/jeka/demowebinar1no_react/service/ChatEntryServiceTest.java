@@ -2,6 +2,7 @@ package org.jeka.demowebinar1no_react.service;
 
 import org.jeka.demowebinar1no_react.model.ChatEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
+import org.jeka.demowebinar1no_react.model.Role;
 import org.jeka.demowebinar1no_react.repository.ChatEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class ChatEntryServiceTest {
         testEntry = ChatEntryEntity.builder()
                 .id(1L)
                 .chat(testChat)
-                .role("user")
+                .role(Role.USER)
                 .content("Hello, world!")
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -96,7 +97,7 @@ class ChatEntryServiceTest {
         // Given
         ChatEntryEntity newEntry = ChatEntryEntity.builder()
                 .chat(testChat)
-                .role("user")
+                .role(Role.USER)
                 .content("New message")
                 .build();
         when(chatEntryRepository.save(any(ChatEntryEntity.class))).thenReturn(testEntry);
@@ -114,7 +115,7 @@ class ChatEntryServiceTest {
     void update_WhenEntryExists_ShouldUpdateAndReturnEntry() {
         // Given
         ChatEntryEntity updatedEntry = ChatEntryEntity.builder()
-                .role("assistant")
+                .role(Role.ASSISTANT)
                 .content("Updated message")
                 .build();
         when(chatEntryRepository.findById(1L)).thenReturn(Optional.of(testEntry));
@@ -133,7 +134,7 @@ class ChatEntryServiceTest {
     void update_WhenEntryNotExists_ShouldThrowException() {
         // Given
         ChatEntryEntity updatedEntry = ChatEntryEntity.builder()
-                .role("assistant")
+                .role(Role.ASSISTANT)
                 .content("Updated message")
                 .build();
         when(chatEntryRepository.findById(999L)).thenReturn(Optional.empty());

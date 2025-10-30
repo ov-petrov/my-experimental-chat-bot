@@ -2,7 +2,7 @@ package org.jeka.demowebinar1no_react.repository;
 
 import org.jeka.demowebinar1no_react.model.ChatEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
-import org.jeka.demowebinar1no_react.repository.ChatRepository;
+import org.jeka.demowebinar1no_react.model.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ class ChatEntryRepositoryTest {
 
         testEntry = ChatEntryEntity.builder()
                 .chat(testChat)
-                .role("user")
+                .role(Role.USER)
                 .content("Hello, world!")
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -54,7 +54,7 @@ class ChatEntryRepositoryTest {
         // Then
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getContent()).isEqualTo("Hello, world!");
-        assertThat(saved.getRole()).isEqualTo("user");
+        assertThat(saved.getRole()).isEqualTo(Role.USER);
         assertThat(saved.getChat().getId()).isEqualTo(testChat.getId());
     }
 
@@ -83,19 +83,19 @@ class ChatEntryRepositoryTest {
 
         ChatEntryEntity entry1 = ChatEntryEntity.builder()
                 .chat(testChat)
-                .role("user")
+                .role(Role.USER)
                 .content("First message")
                 .timestamp(LocalDateTime.now().minusHours(2))
                 .build();
         ChatEntryEntity entry2 = ChatEntryEntity.builder()
                 .chat(testChat)
-                .role("assistant")
+                .role(Role.ASSISTANT)
                 .content("Second message")
                 .timestamp(LocalDateTime.now().minusHours(1))
                 .build();
         ChatEntryEntity entry3 = ChatEntryEntity.builder()
                 .chat(anotherChat)
-                .role("user")
+                .role(Role.USER)
                 .content("Different chat message")
                 .timestamp(LocalDateTime.now())
                 .build();

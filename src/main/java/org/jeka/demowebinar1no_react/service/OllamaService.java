@@ -1,10 +1,10 @@
 package org.jeka.demowebinar1no_react.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jeka.demowebinar1no_react.dto.ollama.*;
-import org.springframework.beans.factory.annotation.Value;
+import org.jeka.demowebinar1no_react.dto.ollama.OllamaModel;
+import org.jeka.demowebinar1no_react.dto.ollama.OllamaModelsResponse;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -17,46 +17,62 @@ import java.util.List;
 @Slf4j
 public class OllamaService {
 
+    private final ChatClient chatClient;
     private final WebClient webClient;
 
-
-    @Value("${spring.ai.ollama.chat.model:gemma3:4b-it-q4_K_M}")
-    private String chatModel;
-
     /**
-     * Send a chat message to Ollama and get AI response
+     * Send a chat message to Ollama and get AI response using Spring AI ChatClient
      */
     public Mono<String> chat(String message) {
         log.info("Sending message to Ollama: {}", message);
-        
-        OllamaMessage userMessage = OllamaMessage.builder()
-                .role("user")
-                .content(message)
-                .build();
 
-        OllamaChatRequest request = OllamaChatRequest.builder()
-                .model(chatModel)
-                .messages(List.of(userMessage))
-                .stream(false)
-                .options(OllamaOptions.builder()
-                        .temperature(0.7)
-                        .topP(0.9)
-                        .maxTokens(1000)
-                        .build())
-                .build();
+        return Mono.fromCallable(() -> {
+            try {
+                String response = chatClient.prompt()
+                        .user(message)
+                        .call()
+                        .content();
 
-        return webClient.post()
-                .uri("/api/chat")
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(OllamaChatResponse.class)
-                .map(response -> {
-                    log.debug("Ollama response: {}", response);
-                    return response.getMessage().getContent();
-                })
-                .timeout(Duration.ofSeconds(30))
-                .doOnError(error -> log.error("Error calling Ollama: {}", error.getMessage()))
-                .onErrorReturn("Sorry, I'm having trouble connecting to the AI service right now.");
+                log.debug("Ollama response: {}", response);
+                return response;
+            } catch (Exception e) {
+                log.error("Error calling Ollama: {}", e.getMessage());
+                return "Sorry, I'm having trouble connecting to the AI service right now.";
+            }
+        });
+    }
+
+    /**
+     * Synchronous version of chat for non-reactive contexts
+     */
+    public String chatSync(String message) {
+        long startTime = System.currentTimeMillis();
+        log.info("Sending message to Ollama (sync), message length: {} chars", message.length());
+
+        try {
+            String response = chatClient.prompt()
+                    .user(message)
+                    .call()
+                    .content();
+
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+
+            if (response != null) {
+                log.info("Ollama response received in {} ms ({} seconds), response length: {} chars",
+                        duration, String.format("%.2f", duration / 1000.0), response.length());
+                log.debug("Ollama response: {}", response);
+            } else {
+                log.warn("Ollama returned null response in {} ms", duration);
+            }
+
+            return response;
+        } catch (Exception e) {
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            log.error("Error calling Ollama after {} ms: {}", duration, e.getMessage());
+            return "Sorry, I'm having trouble connecting to the AI service right now.";
+        }
     }
 
     /**
