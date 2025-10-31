@@ -24,6 +24,10 @@ public class ChatEntity {
     @Column(nullable = false, length = 255)
     private String title;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "system_prompt_id")
+    private PromptEntity systemPrompt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

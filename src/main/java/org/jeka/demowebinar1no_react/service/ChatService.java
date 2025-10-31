@@ -31,6 +31,7 @@ public class ChatService {
         return chatRepository.findById(id)
                 .map(existing -> {
                     existing.setTitle(updated.getTitle());
+                    existing.setSystemPrompt(updated.getSystemPrompt());
                     return chatRepository.save(existing);
                 })
                 .orElseThrow(() -> new IllegalArgumentException("Chat not found: " + id));

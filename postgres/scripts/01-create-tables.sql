@@ -1,5 +1,14 @@
 -- Скрипт: schema.sql
 
+-- Таблица для хранения системных промптов (создается первой, т.к. на неё ссылается chat)
+CREATE TABLE IF NOT EXISTS prompt (
+                                      id SERIAL PRIMARY KEY,
+                                      type VARCHAR(50) NOT NULL,    -- Например, 'RAG' или 'Expansion'
+    name VARCHAR(255) NOT NULL,
+    content TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
 -- Таблица для хранения информации о чатах
 CREATE TABLE IF NOT EXISTS chat (
                                     id SERIAL PRIMARY KEY,
@@ -19,13 +28,4 @@ CREATE TABLE IF NOT EXISTS chat_entry (
     FOREIGN KEY(chat_id)
     REFERENCES chat(id)
     ON DELETE CASCADE
-    );
-
--- Таблица для хранения системных промптов
-CREATE TABLE IF NOT EXISTS prompt (
-                                      id SERIAL PRIMARY KEY,
-                                      type VARCHAR(50) NOT NULL,    -- Например, 'RAG' или 'Expansion'
-    name VARCHAR(255) NOT NULL,
-    content TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

@@ -2,6 +2,7 @@ package org.jeka.demowebinar1no_react.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jeka.demowebinar1no_react.model.ChatEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
 import org.jeka.demowebinar1no_react.model.PromptEntity;
@@ -30,9 +31,12 @@ public class ChatController {
     @GetMapping({"/", "/chats"})
     public String listChats(Model model) {
         List<ChatEntity> chats = chatService.findAll();
+        List<PromptEntity> prompts = promptService.findAll();
         model.addAttribute("pageTitle", "Chats");
         model.addAttribute("chats", chats);
+        model.addAttribute("prompts", prompts);
         model.addAttribute("newChat", new ChatEntity());
+        model.addAttribute("newPrompt", new PromptEntity());
         model.addAttribute("selectedChat", null);
         model.addAttribute("entries", null);
         model.addAttribute("newEntry", new ChatEntryEntity());
@@ -40,17 +44,43 @@ public class ChatController {
     }
 
     @PostMapping("/chats")
-    public String createChat(@ModelAttribute("newChat") ChatEntity newChat) {
+    public String createChat(@ModelAttribute("newChat") ChatEntity newChat,
+                             @RequestParam(required = false) String systemPromptId) {
+        // Set system prompt if provided (not null, not empty)
+        if (StringUtils.isNotBlank(systemPromptId)) {
+            try {
+                Long promptId = Long.parseLong(systemPromptId);
+                PromptEntity prompt = promptService.findById(promptId)
+                        .orElseThrow(() -> new IllegalArgumentException("Prompt not found: " + promptId));
+                newChat.setSystemPrompt(prompt);
+                log.debug("Setting system prompt with id: {}", promptId);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid systemPromptId format: {}", systemPromptId);
+            }
+        } else {
+            // Explicitly set to null to ensure no prompt is assigned
+            newChat.setSystemPrompt(null);
+            log.debug("No system prompt selected");
+        }
         ChatEntity created = chatService.create(newChat);
         return "redirect:/chats/" + created.getId();
+    }
+
+    @PostMapping("/prompts")
+    public String createPrompt(@ModelAttribute("newPrompt") PromptEntity newPrompt) {
+        promptService.create(newPrompt);
+        return "redirect:/chats";
     }
 
     @GetMapping("/chats/{id}")
     public String viewChat(@PathVariable Long id, Model model) {
         ChatEntity chat = chatService.findById(id).orElseThrow();
+        List<PromptEntity> prompts = promptService.findAll();
         model.addAttribute("pageTitle", "Chats");
         model.addAttribute("chats", chatService.findAll());
+        model.addAttribute("prompts", prompts);
         model.addAttribute("newChat", new ChatEntity());
+        model.addAttribute("newPrompt", new PromptEntity());
         model.addAttribute("selectedChat", chat);
         model.addAttribute("entries", chatEntryService.findByChat(chat));
         model.addAttribute("newEntry", ChatEntryEntity.builder().role(Role.USER).chat(chat).build());
@@ -60,9 +90,6 @@ public class ChatController {
     @PostMapping("/chats/{id}/entries")
     public String addEntry(@PathVariable Long id,
                            @ModelAttribute("newEntry") ChatEntryEntity newEntry) {
-        long requestStartTime = System.currentTimeMillis();
-        log.info("Processing new chat entry for chat ID: {}", id);
-        
         ChatEntity chat = chatService.findById(id).orElseThrow();
         newEntry.setChat(chat);
         
@@ -74,33 +101,29 @@ public class ChatController {
         if (Role.USER.equals(newEntry.getRole())) {
             try {
                 log.info("Requesting AI response for user message");
-                long aiStartTime = System.currentTimeMillis();
 
-                String aiResponse = ollamaService.chatSync(newEntry.getContent());
+                // Get system prompt content if available
+                String systemPrompt = null;
+                if (chat.getSystemPrompt() != null && StringUtils.isNotBlank(chat.getSystemPrompt().getContent())) {
+                    systemPrompt = chat.getSystemPrompt().getContent();
+                }
 
-                long aiEndTime = System.currentTimeMillis();
-                long aiDuration = aiEndTime - aiStartTime;
-                
-                if (aiResponse != null && !aiResponse.trim().isEmpty()) {
+                String aiResponse = ollamaService.chatSync(newEntry.getContent(), systemPrompt);
+
+                if (StringUtils.isNotBlank(aiResponse)) {
                     ChatEntryEntity aiEntry = ChatEntryEntity.builder()
                             .chat(chat)
                             .role(Role.ASSISTANT)
                             .content(aiResponse)
                             .build();
                     chatEntryService.create(aiEntry);
-                    log.info("AI response saved. Total AI processing time: {} ms ({} seconds)",
-                            aiDuration, String.format("%.2f", aiDuration / 1000.0));
+                    log.info("AI response saved");
                 }
             } catch (Exception e) {
                 log.error("Error getting AI response: {}", e.getMessage());
                 // Continue without AI response
             }
         }
-
-        long requestEndTime = System.currentTimeMillis();
-        long totalDuration = requestEndTime - requestStartTime;
-        log.info("Request completed in {} ms ({} seconds)",
-                totalDuration, String.format("%.2f", totalDuration / 1000.0));
         
         return "redirect:/chats/" + id;
     }
@@ -160,35 +183,6 @@ public class ChatController {
         }
     }
 
-    /**
-     * Build enhanced prompt with system prompt and conversation history
-     */
-    private String buildEnhancedPrompt(ChatEntity chat, String userMessage) {
-        StringBuilder promptBuilder = new StringBuilder();
-        
-        // Add system prompt if available
-        Optional<PromptEntity> systemPrompt = promptService.findFirstByType("System");
-        if (systemPrompt.isPresent()) {
-            promptBuilder.append("System: ").append(systemPrompt.get().getContent()).append("\n\n");
-        }
-        
-        // Add conversation history (last 10 messages for context)
-        List<ChatEntryEntity> recentEntries = chatEntryService.findByChat(chat);
-        int startIndex = Math.max(0, recentEntries.size() - 10);
-        
-        for (int i = startIndex; i < recentEntries.size(); i++) {
-            ChatEntryEntity entry = recentEntries.get(i);
-            promptBuilder.append(entry.getRole().getRole().toUpperCase())
-                    .append(": ")
-                    .append(entry.getContent())
-                    .append("\n");
-        }
-        
-        // Add current user message
-        promptBuilder.append("USER: ").append(userMessage);
-        
-        return promptBuilder.toString();
-    }
 }
 
 

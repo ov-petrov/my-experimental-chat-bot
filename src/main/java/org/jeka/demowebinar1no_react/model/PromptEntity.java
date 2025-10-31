@@ -25,7 +25,7 @@ public class PromptEntity {
     @Column(nullable = false, length = 255)
     private String name;
 
-    @Lob
+    @Column(columnDefinition = "text")
     private String content;
 
     @CreationTimestamp
