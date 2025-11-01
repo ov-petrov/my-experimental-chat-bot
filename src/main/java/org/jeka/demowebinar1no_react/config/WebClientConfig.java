@@ -2,7 +2,12 @@ package org.jeka.demowebinar1no_react.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.jeka.demowebinar1no_react.repository.ChatRepository;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,14 +44,26 @@ public class WebClientConfig {
     }
 
     @Bean
-    public ChatClient chatClient(ChatModel chatModel) {
+    public ChatClient chatClient(ChatModel chatModel, ChatRepository chatRepository) {
         OllamaOptions options = OllamaOptions.builder()
                 .temperature(temperature)
                 .topP(topP)
                 .build();
 
         return ChatClient.builder(chatModel)
+                .defaultAdvisors(conversationAdvisor(chatRepository))
                 .defaultOptions(options)
+                .build();
+    }
+
+    private Advisor conversationAdvisor(ChatRepository chatRepository) {
+        return MessageChatMemoryAdvisor.builder(getChatMemory(chatRepository)).build();
+    }
+
+    private ChatMemory getChatMemory(ChatRepository chatRepository) {
+        return MessageWindowChatMemory.builder()
+                .maxMessages(2)
+                .chatMemoryRepository(chatRepository)
                 .build();
     }
 

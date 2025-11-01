@@ -39,9 +39,6 @@ class ChatControllerTest {
     private org.jeka.demowebinar1no_react.service.OllamaService ollamaService;
 
     @MockBean
-    private org.jeka.demowebinar1no_react.service.OllamaServiceNew ollamaServiceNew;
-
-    @MockBean
     private org.jeka.demowebinar1no_react.service.PromptService promptService;
 
     private ChatEntity testChat;

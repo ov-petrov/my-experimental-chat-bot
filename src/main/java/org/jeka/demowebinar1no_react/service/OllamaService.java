@@ -4,11 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jeka.demowebinar1no_react.dto.ollama.OllamaModel;
 import org.jeka.demowebinar1no_react.dto.ollama.OllamaModelsResponse;
-import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
-import org.jeka.demowebinar1no_react.model.Role;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +15,6 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +23,6 @@ public class OllamaService {
 
     private final ChatClient chatClient;
     private final WebClient webClient;
-    private final ChatEntryService chatEntryService;
     private final ChatService chatService;
 
     /**
@@ -51,26 +47,12 @@ public class OllamaService {
         });
     }
 
-    /**
-     * Synchronous version of chat for non-reactive contexts
-     * Calculates and logs AI response time
-     */
-    public String chatSync(String message) {
-        return chatSync(message, null);
-    }
-
     @Transactional
     public SseEmitter proceedResponse(Long chatId, String message) {
         var emitter = new SseEmitter(0L);
         var finalResult = new StringBuilder();
 
         var chat = chatService.findById(chatId).orElseThrow();
-
-        chatEntryService.create(ChatEntryEntity.builder()
-                .chat(chat)
-                .role(Role.USER)
-                .content(message)
-                .build());
 
         ChatClient.ChatClientRequestSpec promptBuilder;
         if (chat.getSystemPrompt() != null && StringUtils.isNotBlank(chat.getSystemPrompt().getContent())) {
@@ -79,19 +61,13 @@ public class OllamaService {
             promptBuilder = chatClient.prompt();
         }
         promptBuilder
+                .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, chatId))
                 .user(message)
                 .stream()
                 .chatResponse()
                 .subscribe(response -> sendToEmitter(response, emitter, finalResult),
                         emitter::completeWithError,
-                        () -> {
-                            chatEntryService.create(ChatEntryEntity.builder()
-                                    .chat(chat)
-                                    .role(Role.ASSISTANT)
-                                    .content(finalResult.toString())
-                                    .build());
-                            completeEmitter(emitter);
-                        });
+                        () -> completeEmitter(emitter));
 
         return emitter;
     }
@@ -172,24 +148,4 @@ public class OllamaService {
                 .onErrorReturn(false);
     }
 
-    /**
-     * Get list of available models from Ollama
-     */
-    public Mono<OllamaModelsResponse> getModels() {
-        return webClient.get()
-                .uri("/api/tags")
-                .retrieve()
-                .bodyToMono(OllamaModelsResponse.class)
-                .timeout(Duration.ofSeconds(10));
-    }
-
-    /**
-     * Get models as a simple list of model names
-     */
-    public Mono<List<String>> getModelNames() {
-        return getModels()
-                .map(response -> response.getModels().stream()
-                        .map(OllamaModel::getName)
-                        .toList());
-    }
 }

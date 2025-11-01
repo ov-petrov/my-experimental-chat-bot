@@ -3,6 +3,7 @@ package org.jeka.demowebinar1no_react.model;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.ai.chat.messages.Message;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +33,19 @@ public class ChatEntryEntity {
     @CreationTimestamp
     @Column(name = "timestamp", nullable = false, updatable = false)
     private LocalDateTime timestamp;
+
+    public static ChatEntryEntity fromMessage(Message message) {
+        var role = message.getMessageType().getValue();
+        var text = message.getText();
+        return ChatEntryEntity.builder()
+                .role(Role.getRole(role))
+                .content(text)
+                .build();
+    }
+
+    public Message toMessage() {
+        return this.role.getMessage(this.content);
+    }
 }
 
 

@@ -32,7 +32,13 @@ public class ChatEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("timestamp DESC")
     private List<ChatEntryEntity> entries = new ArrayList<>();
+
+    public void addEntry(ChatEntryEntity chatEntry) {
+        chatEntry.setChat(this);
+        this.entries.add(chatEntry);
+    }
+
 }
