@@ -1,10 +1,11 @@
 package org.jeka.demowebinar1no_react.service;
 
 import lombok.RequiredArgsConstructor;
-import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
 import org.jeka.demowebinar1no_react.model.ChatEntity;
+import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
 import org.jeka.demowebinar1no_react.repository.ChatEntryRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public class ChatEntryService {
         return chatEntryRepository.findById(id);
     }
 
+    @Transactional
     public ChatEntryEntity create(ChatEntryEntity entry) {
         entry.setId(null);
         return chatEntryRepository.save(entry);

@@ -11,9 +11,11 @@ import org.jeka.demowebinar1no_react.service.ChatEntryService;
 import org.jeka.demowebinar1no_react.service.ChatService;
 import org.jeka.demowebinar1no_react.service.OllamaService;
 import org.jeka.demowebinar1no_react.service.PromptService;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Optional;
@@ -90,41 +92,9 @@ public class ChatController {
     @PostMapping("/chats/{id}/entries")
     public String addEntry(@PathVariable Long id,
                            @ModelAttribute("newEntry") ChatEntryEntity newEntry) {
-        ChatEntity chat = chatService.findById(id).orElseThrow();
-        newEntry.setChat(chat);
-        
-        // Save user message
-        chatEntryService.create(newEntry);
-        log.debug("User message saved");
-        
-        // Get AI response if it's a user message
-        if (Role.USER.equals(newEntry.getRole())) {
-            try {
-                log.info("Requesting AI response for user message");
-
-                // Get system prompt content if available
-                String systemPrompt = null;
-                if (chat.getSystemPrompt() != null && StringUtils.isNotBlank(chat.getSystemPrompt().getContent())) {
-                    systemPrompt = chat.getSystemPrompt().getContent();
-                }
-
-                String aiResponse = ollamaService.chatSync(newEntry.getContent(), systemPrompt);
-
-                if (StringUtils.isNotBlank(aiResponse)) {
-                    ChatEntryEntity aiEntry = ChatEntryEntity.builder()
-                            .chat(chat)
-                            .role(Role.ASSISTANT)
-                            .content(aiResponse)
-                            .build();
-                    chatEntryService.create(aiEntry);
-                    log.info("AI response saved");
-                }
-            } catch (Exception e) {
-                log.error("Error getting AI response: {}", e.getMessage());
-                // Continue without AI response
-            }
-        }
-        
+        // This endpoint is kept for backward compatibility but is no longer used
+        // Streaming is handled via /api/chats/{chatId}/stream endpoint
+        // Entry saving is done in OllamaService.proceedResponse()
         return "redirect:/chats/" + id;
     }
 
@@ -181,6 +151,18 @@ public class ChatController {
         } catch (Exception e) {
             return "Error setting system prompt: " + e.getMessage();
         }
+    }
+
+    /**
+     * Stream AI response using Server-Sent Events (SSE)
+     * Returns chunks of the AI response as they are generated
+     */
+    @GetMapping(value = "/api/chats/{chatId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamChatResponse(@PathVariable Long chatId,
+                                         @RequestParam String message) {
+        log.info("Starting streaming response for chat {} with message {}", chatId, message);
+
+        return ollamaService.proceedResponse(chatId, message);
     }
 
 }

@@ -1,13 +1,19 @@
 package org.jeka.demowebinar1no_react.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jeka.demowebinar1no_react.dto.ollama.OllamaModel;
 import org.jeka.demowebinar1no_react.dto.ollama.OllamaModelsResponse;
+import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
+import org.jeka.demowebinar1no_react.model.Role;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -20,6 +26,8 @@ public class OllamaService {
 
     private final ChatClient chatClient;
     private final WebClient webClient;
+    private final ChatEntryService chatEntryService;
+    private final ChatService chatService;
 
     /**
      * Send a chat message to Ollama and get AI response using Spring AI ChatClient
@@ -49,6 +57,58 @@ public class OllamaService {
      */
     public String chatSync(String message) {
         return chatSync(message, null);
+    }
+
+    @Transactional
+    public SseEmitter proceedResponse(Long chatId, String message) {
+        var emitter = new SseEmitter(0L);
+        var finalResult = new StringBuilder();
+
+        var chat = chatService.findById(chatId).orElseThrow();
+
+        chatEntryService.create(ChatEntryEntity.builder()
+                .chat(chat)
+                .role(Role.USER)
+                .content(message)
+                .build());
+
+        ChatClient.ChatClientRequestSpec promptBuilder;
+        if (chat.getSystemPrompt() != null && StringUtils.isNotBlank(chat.getSystemPrompt().getContent())) {
+            promptBuilder = chatClient.prompt(chat.getSystemPrompt().getContent());
+        } else {
+            promptBuilder = chatClient.prompt();
+        }
+        promptBuilder
+                .user(message)
+                .stream()
+                .chatResponse()
+                .subscribe(response -> sendToEmitter(response, emitter, finalResult),
+                        emitter::completeWithError,
+                        () -> {
+                            chatEntryService.create(ChatEntryEntity.builder()
+                                    .chat(chat)
+                                    .role(Role.ASSISTANT)
+                                    .content(finalResult.toString())
+                                    .build());
+                            completeEmitter(emitter);
+                        });
+
+        return emitter;
+    }
+
+    @SneakyThrows
+    private static void completeEmitter(SseEmitter emitter) {
+        emitter.send(SseEmitter.event()
+                .name("complete")
+                .data("{\"status\":\"completed\"}"));
+        emitter.complete();
+    }
+
+    @SneakyThrows
+    private static void sendToEmitter(ChatResponse response, SseEmitter emitter, StringBuilder stringBuilder) {
+        var answer = response.getResult().getOutput();
+        emitter.send(answer);
+        stringBuilder.append(answer.getText());
     }
 
     /**
