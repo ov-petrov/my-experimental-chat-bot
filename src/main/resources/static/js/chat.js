@@ -145,7 +145,8 @@ function startStreaming() {
         if (chunk) {
             fullResponse += chunk;
             messageTextEl.setAttribute('data-content', fullResponse);
-            messageTextEl.textContent = marked.parse(fullResponse);
+            messageTextEl.textContent = fullResponse;
+            renderMarkdown();
             scrollToBottom();
         }
     };
