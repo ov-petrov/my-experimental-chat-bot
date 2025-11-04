@@ -3,6 +3,7 @@ package org.jeka.demowebinar1no_react.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.jeka.demowebinar1no_react.repository.ChatRepository;
+import org.jeka.demowebinar1no_react.service.PostgresMemory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -61,7 +62,7 @@ public class WebClientConfig {
     }
 
     private ChatMemory getChatMemory(ChatRepository chatRepository) {
-        return MessageWindowChatMemory.builder()
+        return PostgresMemory.builder()
                 .maxMessages(2)
                 .chatMemoryRepository(chatRepository)
                 .build();

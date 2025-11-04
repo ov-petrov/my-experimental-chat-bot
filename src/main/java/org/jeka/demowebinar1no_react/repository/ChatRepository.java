@@ -8,36 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface ChatRepository extends JpaRepository<ChatEntity, Long>, ChatMemoryRepository {
-    @Override
-    default List<String> findConversationIds() {
-        return this.findAll().stream()
-                .map(v -> v.getId().toString())
-                .toList();
-    }
+public interface ChatRepository extends JpaRepository<ChatEntity, Long> {
 
-    @Override
-    default List<Message> findByConversationId(String conversationId) {
-        return this.findById(Long.valueOf(conversationId))
-                .orElseThrow()
-                .getEntries()
-                .stream()
-                .map(ChatEntryEntity::toMessage)
-                .toList();
-    }
-
-    @Override
-    default void saveAll(String conversationId, List<Message> messages) {
-        var chat = this.findById(Long.valueOf(conversationId))
-                .orElseThrow();
-        messages.forEach(m -> chat.addEntry(ChatEntryEntity.fromMessage(m)));
-        save(chat);
-    }
-
-    @Override
-    default void deleteByConversationId(String conversationId) {
-        // not implemented
-    }
 }
 
 

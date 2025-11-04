@@ -1,5 +1,6 @@
 package org.jeka.demowebinar1no_react.service;
 
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
@@ -12,16 +13,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
+@Builder
 public class PostgresMemory implements ChatMemory {
-    private final ChatRepository chatRepository;
+    private final ChatRepository chatMemoryRepository;
+    private final int maxMessages;
 
     @Override
-    @Transactional
     public void add(String conversationId, Message message) {
-        var chat = chatRepository.findById(Long.valueOf(conversationId)).orElseThrow();
+        var chat = chatMemoryRepository.findById(Long.valueOf(conversationId)).orElseThrow();
         chat.addEntry(ChatEntryEntity.fromMessage(message));
+        chatMemoryRepository.save(chat);
     }
 
     @Override
@@ -30,16 +31,16 @@ public class PostgresMemory implements ChatMemory {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<Message> get(String conversationId) {
-        var chat = chatRepository.findById(Long.valueOf(conversationId)).orElseThrow();
+        var chat = chatMemoryRepository.findById(Long.valueOf(conversationId)).orElseThrow();
         return chat.getEntries().stream()
                 .map(ChatEntryEntity::toMessage)
+                .limit(maxMessages)
                 .toList();
     }
 
     @Override
     public void clear(String conversationId) {
-
+        // not implemented
     }
 }

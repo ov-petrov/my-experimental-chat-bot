@@ -47,7 +47,7 @@ services:
       /bin/sh -c "
         ollama serve &
         sleep 10 &&
-        ollama pull gemma3:12b-it-qat &&
+        ollama pull gemma3:1b &&
         ollama pull mxbai-embed-large &&
         wait
       "
