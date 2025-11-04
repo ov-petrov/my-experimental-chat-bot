@@ -6,11 +6,14 @@ import org.jeka.demowebinar1no_react.repository.ChatRepository;
 import org.jeka.demowebinar1no_react.service.PostgresMemory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +32,9 @@ public class WebClientConfig {
     @Value("${spring.ai.ollama.chat.options.top-p:0.9}")
     private Double topP;
 
+    @Autowired
+    private VectorStore vectorStore;
+
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
@@ -40,7 +46,8 @@ public class WebClientConfig {
     public WebClient webClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(ollamaBaseUrl)
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
+                .codecs(configurer ->
+                        configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
                 .build();
     }
 
@@ -52,9 +59,13 @@ public class WebClientConfig {
                 .build();
 
         return ChatClient.builder(chatModel)
-                .defaultAdvisors(conversationAdvisor(chatRepository))
+                .defaultAdvisors(conversationAdvisor(chatRepository), ragAdvisor())
                 .defaultOptions(options)
                 .build();
+    }
+
+    private Advisor ragAdvisor() {
+        return QuestionAnswerAdvisor.builder(vectorStore).build();
     }
 
     private Advisor conversationAdvisor(ChatRepository chatRepository) {
