@@ -4,11 +4,14 @@ import org.jeka.demowebinar1no_react.repository.ChatRepository;
 import org.jeka.demowebinar1no_react.service.PostgresMemory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +22,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 public class WebClientConfig {
+
+    public static final String PROMPT_TEMPLATE = """
+                        {query}\n\nНиже представлена информация о контексте, обрамленная 
+                        ---------------------\n\n---------------------\n{question_answer_context}\n---------------------\n\n
+                        Учитывая контекст и предоставленную информацию об истории вопроса, а также предыдущие знания, ответь 
+                        на комментарий пользователя. При ответе, не ограничивайся предоставленным контекстом, 
+                        используй все имеющиеся знания.
+            """;
 
     @Value("${spring.ai.ollama.base-url:http://localhost:11434}")
     private String ollamaBaseUrl;
@@ -49,13 +60,19 @@ public class WebClientConfig {
                 .build();
 
         return ChatClient.builder(chatModel)
-                .defaultAdvisors(conversationAdvisor(chatRepository), ragAdvisor())
+                .defaultAdvisors(conversationAdvisor(chatRepository),
+                        ragAdvisor(),
+                        SimpleLoggerAdvisor.builder().build()
+                )
                 .defaultOptions(options)
                 .build();
     }
 
     private Advisor ragAdvisor() {
-        return QuestionAnswerAdvisor.builder(vectorStore).build();
+        return QuestionAnswerAdvisor.builder(vectorStore)
+                .promptTemplate(new PromptTemplate(PROMPT_TEMPLATE))
+                .searchRequest(SearchRequest.builder().topK(3).build())
+                .build();
     }
 
     private Advisor conversationAdvisor(ChatRepository chatRepository) {
