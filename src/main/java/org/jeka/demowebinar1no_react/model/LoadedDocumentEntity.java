@@ -23,7 +23,7 @@ public class LoadedDocumentEntity {
     private String documentType;
     private Integer chunkCount;
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "loaded_at", nullable = false, updatable = false)
     private LocalDateTime loadedAt;
 
 

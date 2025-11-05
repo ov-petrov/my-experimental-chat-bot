@@ -53,7 +53,7 @@ CREATE EXTENSION vector;
 CREATE TABLE IF NOT EXISTS vector_store (
 id VARCHAR(255) PRIMARY KEY,
 content TEXT,
-matadata JSON,
+metadata JSON,
 embedding VECTOR(1024)
 );
 -- Индекс HNSW для быстрого векторного поиска
