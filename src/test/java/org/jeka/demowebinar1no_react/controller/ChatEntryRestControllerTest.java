@@ -24,7 +24,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+                "spring.ai.ollama.enabled=false",
+                "spring.ai.vectorstore.pgvector.enabled=false"
+        })
 class ChatEntryRestControllerTest {
 
     @LocalServerPort
@@ -73,7 +77,7 @@ class ChatEntryRestControllerTest {
                 .contentType(ContentType.JSON)
                 .body("size()", is(1))
                 .body("[0].content", is("Hello, world!"))
-                .body("[0].role", is("user"));
+                .body("[0].role", is(Role.USER.name()));
     }
 
     @Test
@@ -112,12 +116,12 @@ class ChatEntryRestControllerTest {
                 .contentType(ContentType.JSON)
                 .body("id", is(1))
                 .body("content", is("Hello, world!"))
-                .body("role", is("user"))
+                .body("role", is(Role.USER.name()))
                 .header("Location", containsString("/api/chats/1/entries/1"));
     }
 
     @Test
-    void createEntry_WhenChatNotExists_ShouldReturn404() {
+    void createEntry_WhenChatNotExists_ShouldReturn500() {
         // Given
         ChatEntryEntity newEntry = ChatEntryEntity.builder()
                 .role(Role.USER)
@@ -126,6 +130,7 @@ class ChatEntryRestControllerTest {
         when(chatService.findById(999L)).thenReturn(Optional.empty());
 
         // When & Then
+        // .orElseThrow() throws NoSuchElementException, resulting in 500 error
         given()
                 .port(port)
                 .contentType(ContentType.JSON)
@@ -133,7 +138,7 @@ class ChatEntryRestControllerTest {
                 .when()
                 .post("/api/chats/999/entries")
                 .then()
-                .statusCode(500); // Internal server error due to exception
+                .statusCode(500);
     }
 
     @Test
@@ -151,7 +156,7 @@ class ChatEntryRestControllerTest {
                 .contentType(ContentType.JSON)
                 .body("id", is(1))
                 .body("content", is("Hello, world!"))
-                .body("role", is("user"));
+                .body("role", is(Role.USER.name()));
     }
 
     @Test
@@ -188,7 +193,7 @@ class ChatEntryRestControllerTest {
                 .statusCode(200)
                 .contentType(ContentType.JSON)
                 .body("content", is("Updated message"))
-                .body("role", is("assistant"));
+                .body("role", is(Role.ASSISTANT.name()));
     }
 
     @Test

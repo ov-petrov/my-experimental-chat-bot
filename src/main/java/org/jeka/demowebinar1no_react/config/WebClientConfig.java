@@ -1,7 +1,5 @@
 package org.jeka.demowebinar1no_react.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.jeka.demowebinar1no_react.repository.ChatRepository;
 import org.jeka.demowebinar1no_react.service.PostgresMemory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -33,13 +31,6 @@ public class WebClientConfig {
 
     @Autowired
     private VectorStore vectorStore;
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
-    }
 
     @Bean
     public WebClient webClient(WebClient.Builder builder) {

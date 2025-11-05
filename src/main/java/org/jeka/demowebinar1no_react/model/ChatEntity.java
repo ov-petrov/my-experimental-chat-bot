@@ -34,6 +34,7 @@ public class ChatEntity {
 
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("timestamp DESC")
+    @Builder.Default
     private List<ChatEntryEntity> entries = new ArrayList<>();
 
     public void addEntry(ChatEntryEntity chatEntry) {

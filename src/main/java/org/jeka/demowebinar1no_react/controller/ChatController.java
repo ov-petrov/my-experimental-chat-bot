@@ -11,10 +11,12 @@ import org.jeka.demowebinar1no_react.service.ChatEntryService;
 import org.jeka.demowebinar1no_react.service.ChatService;
 import org.jeka.demowebinar1no_react.service.OllamaService;
 import org.jeka.demowebinar1no_react.service.PromptService;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -76,7 +78,8 @@ public class ChatController {
 
     @GetMapping("/chats/{id}")
     public String viewChat(@PathVariable Long id, Model model) {
-        ChatEntity chat = chatService.findById(id).orElseThrow();
+        ChatEntity chat = chatService.findById(id)
+                .orElseThrow(() -> new HttpServerErrorException(HttpStatusCode.valueOf(404)));
         List<PromptEntity> prompts = promptService.findAll();
         model.addAttribute("pageTitle", "Chats");
         model.addAttribute("chats", chatService.findAll());

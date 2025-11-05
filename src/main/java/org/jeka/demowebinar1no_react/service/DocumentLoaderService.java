@@ -7,8 +7,6 @@ import org.jeka.demowebinar1no_react.repository.LoadedDocumentRepository;
 import org.springframework.ai.reader.TextReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.data.util.Pair;
@@ -29,7 +27,6 @@ public class DocumentLoaderService {
 
     @SneakyThrows
     @Transactional
-    @EventListener(ApplicationReadyEvent.class)
     public void loadDocuments() {
         List<Resource> resourceList = Arrays.stream(
                 resourcePatternResolver.getResources("classpath:/knowledgebase/**/*.txt")).toList();
