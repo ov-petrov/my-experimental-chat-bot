@@ -1,14 +1,11 @@
 package org.jeka.demowebinar1no_react.service;
 
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jeka.demowebinar1no_react.model.ChatEntryEntity;
 import org.jeka.demowebinar1no_react.repository.ChatRepository;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -33,7 +30,9 @@ public class PostgresMemory implements ChatMemory {
     @Override
     public List<Message> get(String conversationId) {
         var chat = chatMemoryRepository.findById(Long.valueOf(conversationId)).orElseThrow();
+        var skipMessages = Math.max(0, chat.getEntries().size() - maxMessages);
         return chat.getEntries().stream()
+                .skip(skipMessages)
                 .map(ChatEntryEntity::toMessage)
                 .limit(maxMessages)
                 .toList();

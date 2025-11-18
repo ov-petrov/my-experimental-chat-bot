@@ -47,7 +47,9 @@ CREATE INDEX IF NOT EXISTS idx_loaded_documents_filename
 ON loaded_document (filename);
 
 -- Векторное расширение для postgres
-CREATE EXTENSION vector;
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS hstore;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Таблица для векторного хранилищ
 CREATE TABLE IF NOT EXISTS vector_store (

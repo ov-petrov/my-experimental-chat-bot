@@ -57,10 +57,14 @@ public class WebClientConfig {
         OllamaOptions options = OllamaOptions.builder()
                 .temperature(temperature)
                 .topP(topP)
+                .topK(20)
+                .repeatPenalty(1.1)
                 .build();
 
         return ChatClient.builder(chatModel)
-                .defaultAdvisors(conversationAdvisor(chatRepository),
+                .defaultAdvisors(
+                        SimpleLoggerAdvisor.builder().build(),
+                        conversationAdvisor(chatRepository),
                         ragAdvisor(),
                         SimpleLoggerAdvisor.builder().build()
                 )
@@ -71,7 +75,7 @@ public class WebClientConfig {
     private Advisor ragAdvisor() {
         return QuestionAnswerAdvisor.builder(vectorStore)
                 .promptTemplate(new PromptTemplate(PROMPT_TEMPLATE))
-                .searchRequest(SearchRequest.builder().topK(3).build())
+                .searchRequest(SearchRequest.builder().topK(4).similarityThreshold(0.75).build())
                 .build();
     }
 
@@ -81,7 +85,7 @@ public class WebClientConfig {
 
     private ChatMemory getChatMemory(ChatRepository chatRepository) {
         return PostgresMemory.builder()
-                .maxMessages(2)
+                .maxMessages(4)
                 .chatMemoryRepository(chatRepository)
                 .build();
     }

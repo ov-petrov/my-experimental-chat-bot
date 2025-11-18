@@ -38,7 +38,7 @@ public class DocumentLoaderService {
                 )
                 .forEach(resourcePair -> {
                     var documents = new TextReader(resourcePair.getFirst()).get();
-                    var textSplitter = TokenTextSplitter.builder().withChunkSize(500).build();
+                    var textSplitter = TokenTextSplitter.builder().withChunkSize(200).build();
                     var chunks = textSplitter.apply(documents);
                     vectorStore.accept(chunks);
 

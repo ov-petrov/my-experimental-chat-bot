@@ -33,7 +33,7 @@ public class ChatEntity {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "chat", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("timestamp DESC")
+    @OrderBy("timestamp ASC")
     @Builder.Default
     private List<ChatEntryEntity> entries = new ArrayList<>();
 

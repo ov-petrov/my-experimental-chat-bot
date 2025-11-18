@@ -16,9 +16,6 @@ services:
       - "5432:5432"
     volumes:
       - ./postgres/data:/var/lib/postgresql/data
-      # Mount scripts directory to execute all SQL files on database initialization
-      # PostgreSQL will automatically execute all .sql files from /docker-entrypoint-initdb.d
-      # in alphabetical order when the database is first initialized
       - ./postgres/scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: "pg_isready -U postgres -d ragdb"
