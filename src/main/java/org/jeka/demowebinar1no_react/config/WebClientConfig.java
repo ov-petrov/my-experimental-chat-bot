@@ -1,5 +1,6 @@
 package org.jeka.demowebinar1no_react.config;
 
+import org.jeka.demowebinar1no_react.advisors.ExpansionQueryAdvisor;
 import org.jeka.demowebinar1no_react.repository.ChatRepository;
 import org.jeka.demowebinar1no_react.service.PostgresMemory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,6 +43,8 @@ public class WebClientConfig {
 
     @Autowired
     private VectorStore vectorStore;
+    @Autowired
+    private ChatModel chatModel;
 
     @Bean
     public WebClient webClient(WebClient.Builder builder) {
@@ -63,24 +66,34 @@ public class WebClientConfig {
 
         return ChatClient.builder(chatModel)
                 .defaultAdvisors(
-                        SimpleLoggerAdvisor.builder().build(),
-                        conversationAdvisor(chatRepository),
-                        ragAdvisor(),
-                        SimpleLoggerAdvisor.builder().build()
+                        expensionQueryAdvisor(0),
+                        conversationAdvisor(chatRepository, 10),
+                        SimpleLoggerAdvisor.builder().order(20).build(),
+                        ragAdvisor(30),
+                        SimpleLoggerAdvisor.builder().order(40).build()
                 )
                 .defaultOptions(options)
                 .build();
     }
 
-    private Advisor ragAdvisor() {
-        return QuestionAnswerAdvisor.builder(vectorStore)
-                .promptTemplate(new PromptTemplate(PROMPT_TEMPLATE))
-                .searchRequest(SearchRequest.builder().topK(4).similarityThreshold(0.75).build())
+    private Advisor expensionQueryAdvisor(int order) {
+        return ExpansionQueryAdvisor.builder(chatModel)
+                .order(order)
                 .build();
     }
 
-    private Advisor conversationAdvisor(ChatRepository chatRepository) {
-        return MessageChatMemoryAdvisor.builder(getChatMemory(chatRepository)).build();
+    private Advisor ragAdvisor(int order) {
+        return QuestionAnswerAdvisor.builder(vectorStore)
+                .promptTemplate(new PromptTemplate(PROMPT_TEMPLATE))
+                .searchRequest(SearchRequest.builder().topK(4).similarityThreshold(0.75).build())
+                .order(order)
+                .build();
+    }
+
+    private Advisor conversationAdvisor(ChatRepository chatRepository, int order) {
+        return MessageChatMemoryAdvisor.builder(getChatMemory(chatRepository))
+                .order(order)
+                .build();
     }
 
     private ChatMemory getChatMemory(ChatRepository chatRepository) {
